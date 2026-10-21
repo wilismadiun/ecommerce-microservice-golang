@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func Test_FinsUserByEmail(t *testing.T) {
+func Test_FindUserByEmail(t *testing.T) {
 	t.Run("Email not found", func(t *testing.T) {
 		email := "nonexistent@example.com"
 

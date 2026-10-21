@@ -2,6 +2,7 @@ package drivers
 
 import (
 	infrastructures "user-service/src/Infrastructures"
+	"user-service/src/Infrastructures/security"
 	"user-service/src/Interfaces/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,5 +13,5 @@ func Router(router *gin.Engine, db *gorm.DB) {
 	handler := infrastructures.Container(db)
 
 	// router
-	http.UserRouter(router, handler)
+	http.UserRouter(router, handler, &security.AuthenticationTokenJWT{})
 }

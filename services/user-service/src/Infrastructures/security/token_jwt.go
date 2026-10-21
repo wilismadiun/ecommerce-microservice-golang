@@ -8,8 +8,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = os.Getenv("JWT_SECRET")
-
 type AuthenticationTokenJWT struct{}
 
 type CustomClaims struct {
@@ -17,6 +15,7 @@ type CustomClaims struct {
 }
 
 func (h *AuthenticationTokenJWT) GenerateToken(id string) (string, error) {
+	secretKey := os.Getenv("JWT_SECRET")
 	now := time.Now()
 
 	claims := CustomClaims{
@@ -24,7 +23,7 @@ func (h *AuthenticationTokenJWT) GenerateToken(id string) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
-			Subject:   id, // 'id' disimpan di Subject (sub)
+			Subject:   id,
 		},
 	}
 
@@ -42,6 +41,7 @@ func (h *AuthenticationTokenJWT) GenerateToken(id string) (string, error) {
 }
 
 func (h *AuthenticationTokenJWT) ValidateToken(tokenString string) (string, error) {
+	secretKey := os.Getenv("JWT_SECRET")
 	claims := &CustomClaims{}
 
 	token, err := jwt.ParseWithClaims(

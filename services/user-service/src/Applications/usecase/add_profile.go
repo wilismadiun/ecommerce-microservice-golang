@@ -19,14 +19,14 @@ func (h *AddProfile) Execute(profile entities.Profile) (entities.Profile, error)
 
 	profile.ID = h.Generator.Generator()
 
-	err = h.Repo.CreateProfile(&profile)
-	if err != nil {
-		return entities.Profile{}, err
-	}
-
 	_, err = h.Repo.FindProfileByUserId(profile.UserId)
 	if err == nil {
 		return entities.Profile{}, entities.ErrProfileAlreadyExists
+	}
+
+	err = h.Repo.CreateProfile(&profile)
+	if err != nil {
+		return entities.Profile{}, err
 	}
 
 	return profile, nil

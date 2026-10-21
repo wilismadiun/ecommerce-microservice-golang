@@ -11,6 +11,7 @@ import (
 	"user-service/config"
 	"user-service/src/Domains/entities"
 	"user-service/src/Infrastructures/database"
+	"user-service/src/Infrastructures/security"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -241,5 +242,140 @@ func Test_Login(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
+	})
+}
+
+func Test_AddProfile(t *testing.T) {
+	router := gin.New()
+	Router(router, database.DB)
+
+	// Helper untuk membuat token JWT valid berdasarkan User ID
+	tokenGenerator := &security.AuthenticationTokenJWT{}
+
+	t.Run("should response 401 when authorization header is empty", func(t *testing.T) {
+		payload := map[string]string{
+			"name":    "John Doe",
+			"phone":   "081234567890",
+			"address": "Jl. Merdeka No. 1",
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		// Request tanpa header Authorization
+		req, _ := http.NewRequest(http.MethodPost, "/profile", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("should response 400 when phone number with fewer than 10 digits", func(t *testing.T) {
+		userId := "user-test-id-002"
+		token, _ := tokenGenerator.GenerateToken(userId)
+
+		payload := map[string]string{
+			"name":    "John Doe",
+			"phone":   "12345", // Kurang dari 10 digit (gagal verifikasi profile)
+			"address": "Jl. Merdeka No. 1",
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/profile", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("should response 409 when the profile already exists", func(t *testing.T) {
+		userId := "user-test-id-003"
+		token, _ := tokenGenerator.GenerateToken(userId)
+
+		dummyUser := entities.User{
+			ID:       userId,
+			Email:    "testuser003@example.com",
+			Password: "hashedpassword",
+		}
+		err := database.DB.Create(&dummyUser).Error
+		assert.NoError(t, err)
+
+		// Seed (masukkan) data profile dummy terlebih dahulu ke database
+		dummyProfile := entities.Profile{
+			ID:      "profile-id-existing",
+			UserId:  userId,
+			Name:    "John Doe",
+			Phone:   "081234567890",
+			Address: "Jl. Merdeka No. 1",
+		}
+		err = database.DB.Create(&dummyProfile).Error
+		assert.NoError(t, err)
+
+		// Cleanup data profile setelah test selesai
+		t.Cleanup(func() {
+			database.DB.Where("user_id = ?", userId).Delete(&entities.Profile{})
+			database.DB.Where("id = ?", userId).Delete(&entities.User{})
+		})
+
+		payload := map[string]string{
+			"name":    "John Doe Updated",
+			"phone":   "081234567890",
+			"address": "Jl. Sudirman No. 2",
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/profile", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusConflict, w.Code)
+	})
+
+	t.Run("should return 201 when profile successfully created", func(t *testing.T) {
+		userId := "user-test-id-004"
+		token, _ := tokenGenerator.GenerateToken(userId)
+
+		dummyUser := entities.User{
+			ID:       userId,
+			Email:    "testuser003@example.com",
+			Password: "hashedpassword",
+		}
+		err := database.DB.Create(&dummyUser).Error
+		assert.NoError(t, err)
+
+		// Cleanup data profile setelah test sukses dimasukkan ke database
+		t.Cleanup(func() {
+			database.DB.Where("user_id = ?", userId).Delete(&entities.Profile{})
+			database.DB.Where("id = ?", userId).Delete(&entities.User{})
+		})
+
+		payload := map[string]string{
+			"name":    "Jane Doe",
+			"phone":   "089876543210",
+			"address": "Jl. Asia Afrika No. 5",
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/profile", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusCreated, w.Code)
+
+		// Validasi tambahan: Cek langsung ke database apakah data benar-benar tersimpan
+		var savedProfile entities.Profile
+		err = database.DB.Where("user_id = ?", userId).First(&savedProfile).Error
+		assert.NoError(t, err)
+		assert.Equal(t, "Jane Doe", savedProfile.Name)
+		assert.Equal(t, "089876543210", savedProfile.Phone)
 	})
 }

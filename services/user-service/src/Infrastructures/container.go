@@ -12,6 +12,7 @@ import (
 
 func Container(db *gorm.DB) *http.Handler {
 	userRepoImplement := repository.UserRepository{DB: db}
+	profileRepoImplement := repository.ProfileRepository{DB: db}
 	hasherImplement := security.HashPasswordBcrypt{}
 	generatorImplement := generator.GeneratorUUID{}
 	tokenImplement := security.AuthenticationTokenJWT{}
@@ -28,8 +29,14 @@ func Container(db *gorm.DB) *http.Handler {
 		Hasher:   &hasherImplement,
 	}
 
+	addProfileHandler := usecase.AddProfile{
+		Repo:      &profileRepoImplement,
+		Generator: &generatorImplement,
+	}
+
 	return &http.Handler{
-		RegisterHandler: &registerHandler,
-		LoginHandler:    &loginHandler,
+		RegisterHandler:   &registerHandler,
+		LoginHandler:      &loginHandler,
+		AddProfileHandler: &addProfileHandler,
 	}
 }

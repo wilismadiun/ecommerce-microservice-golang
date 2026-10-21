@@ -44,13 +44,8 @@ func Test_CreateProfile(t *testing.T) {
 		mockProfileRepo := mocks.NewMockProfileRepository(ctrl)
 		mockGenerator := mocks.NewMockGeneratorId(ctrl)
 
-		// Generator dipanggil untuk membuat ID profile
 		mockGenerator.EXPECT().Generator().Return("profile-id-123").Times(1)
 
-		// Berdasarkan urutan kode usecase Anda, CreateProfile dipanggil terlebih dahulu
-		mockProfileRepo.EXPECT().CreateProfile(gomock.Any()).Return(nil).Times(1)
-
-		// Kemudian FindProfileByUserId mengembalikan nil (artinya error == nil, alias user ID sudah terdaftar)
 		mockProfileRepo.EXPECT().FindProfileByUserId("user-123").Return(entities.Profile{}, nil).Times(1)
 
 		addProfile := &AddProfile{
@@ -79,6 +74,8 @@ func Test_CreateProfile(t *testing.T) {
 		mockGenerator := mocks.NewMockGeneratorId(ctrl)
 
 		mockGenerator.EXPECT().Generator().Return("profile-id-123").Times(1)
+
+		mockProfileRepo.EXPECT().FindProfileByUserId("user-123").Return(entities.Profile{}, entities.ErrUserNotFound).Times(1)
 
 		repoErr := errors.New("database connection error")
 		// Simulasi kegagalan saat insert ke database
@@ -110,10 +107,10 @@ func Test_CreateProfile(t *testing.T) {
 		mockGenerator := mocks.NewMockGeneratorId(ctrl)
 
 		mockGenerator.EXPECT().Generator().Return("profile-id-123").Times(1)
-		mockProfileRepo.EXPECT().CreateProfile(gomock.Any()).Return(nil).Times(1)
 
-		// FindProfileByUserId mengembalikan entities.ErrNotFound (artinya user ID belum memiliki profile, valid)
 		mockProfileRepo.EXPECT().FindProfileByUserId("user-123").Return(entities.Profile{}, entities.ErrUserNotFound).Times(1)
+
+		mockProfileRepo.EXPECT().CreateProfile(gomock.Any()).Return(nil).Times(1)
 
 		addProfile := &AddProfile{
 			Repo:      mockProfileRepo,
