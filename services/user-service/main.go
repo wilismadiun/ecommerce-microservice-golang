@@ -4,6 +4,7 @@ import (
 	"log"
 	"user-service/config"
 	"user-service/src/Infrastructures/database"
+	"user-service/src/Infrastructures/drivers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -19,6 +20,8 @@ func main() {
 
 	dsn := config.DSN()
 	database.ConnectDB(dsn)
+
+	drivers.Router(router, database.DB)
 
 	router.Run(":3000")
 }
