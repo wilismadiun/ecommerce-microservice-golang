@@ -54,7 +54,7 @@ func (h *Handler) Login(c *gin.Context) {
 	if err != nil {
 		statusCode := http.StatusBadRequest
 
-		if errors.Is(err, entities.ErrNotFound) {
+		if errors.Is(err, entities.ErrUserNotFound) {
 			statusCode = http.StatusNotFound
 		} else if errors.Is(err, entities.ErrInvalidPassword) {
 			statusCode = http.StatusUnauthorized

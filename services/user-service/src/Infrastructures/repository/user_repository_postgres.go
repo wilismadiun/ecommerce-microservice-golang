@@ -16,7 +16,7 @@ func (h *UserRepository) FindUserByEmail(email string) (entities.User, error) {
 	err := h.DB.Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return entities.User{}, entities.ErrNotFound
+			return entities.User{}, entities.ErrUserNotFound
 		}
 
 		return entities.User{}, err

@@ -51,7 +51,7 @@ func Test_Login(t *testing.T) {
 		// Mock repository mengembalikan error karena email tidak ditemukan
 		mockUserRepo.EXPECT().
 			FindUserByEmail(input.Email).
-			Return(entities.User{}, entities.ErrNotFound).
+			Return(entities.User{}, entities.ErrUserNotFound).
 			Times(1)
 
 		loginUseCase := &Login{
@@ -63,7 +63,7 @@ func Test_Login(t *testing.T) {
 		token, err := loginUseCase.Execute(input)
 
 		assert.Error(t, err)
-		assert.Equal(t, entities.ErrNotFound, err)
+		assert.Equal(t, entities.ErrUserNotFound, err)
 		assert.Equal(t, "", token)
 	})
 

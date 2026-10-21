@@ -27,7 +27,7 @@ func (h *Register) Execute(user entities.User) (entities.RegisteredUser, error) 
 		return entities.RegisteredUser{}, errors.New("Email is already in use")
 	}
 
-	if !errors.Is(err, entities.ErrNotFound) {
+	if !errors.Is(err, entities.ErrUserNotFound) {
 		return entities.RegisteredUser{}, err
 	}
 

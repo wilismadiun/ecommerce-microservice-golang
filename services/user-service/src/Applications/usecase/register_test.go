@@ -112,7 +112,7 @@ func Test_register(t *testing.T) {
 		mockGenerator := mocks.NewMockGeneratorId(ctrl)
 
 		mockGenerator.EXPECT().Generator().Return("id-123").Times(1)
-		mockRepo.EXPECT().FindUserByEmail("test@example.com").Return(entities.User{}, entities.ErrNotFound).Times(1)
+		mockRepo.EXPECT().FindUserByEmail("test@example.com").Return(entities.User{}, entities.ErrUserNotFound).Times(1)
 
 		hashErr := errors.New("failed to hash password")
 		mockHash.EXPECT().Hash("validpassword123").Return("", hashErr).Times(1)
@@ -144,7 +144,7 @@ func Test_register(t *testing.T) {
 		mockGenerator := mocks.NewMockGeneratorId(ctrl)
 
 		mockGenerator.EXPECT().Generator().Return("id-123").Times(1)
-		mockRepo.EXPECT().FindUserByEmail("test@example.com").Return(entities.User{}, entities.ErrNotFound).Times(1)
+		mockRepo.EXPECT().FindUserByEmail("test@example.com").Return(entities.User{}, entities.ErrUserNotFound).Times(1)
 		mockHash.EXPECT().Hash("validpassword123").Return("hashed_password_123", nil).Times(1)
 
 		repoErr := errors.New("failed to insert user into database")
@@ -177,7 +177,7 @@ func Test_register(t *testing.T) {
 		mockGenerator := mocks.NewMockGeneratorId(ctrl)
 
 		mockGenerator.EXPECT().Generator().Return("id-123").Times(1)
-		mockRepo.EXPECT().FindUserByEmail("test@example.com").Return(entities.User{}, entities.ErrNotFound).Times(1)
+		mockRepo.EXPECT().FindUserByEmail("test@example.com").Return(entities.User{}, entities.ErrUserNotFound).Times(1)
 		mockHash.EXPECT().Hash("validpassword123").Return("hashed_password_123", nil).Times(1)
 		mockRepo.EXPECT().UserRegister(gomock.Any()).Return(nil).Times(1)
 
