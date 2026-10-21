@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"errors"
 	"testing"
 	"user-service/src/Domains/entities"
 	"user-service/src/mocks"
@@ -118,11 +117,10 @@ func Test_Login(t *testing.T) {
 			Return(existingUser, nil).
 			Times(1)
 
-		matchErr := errors.New("password mismatch")
 		// Mock hasher gagal mencocokkan password
 		mockHasher.EXPECT().
 			CompareHashPassword(input.Password, existingUser.Password).
-			Return(matchErr).
+			Return(entities.ErrInvalidPassword).
 			Times(1)
 
 		loginUseCase := &Login{
@@ -134,7 +132,7 @@ func Test_Login(t *testing.T) {
 		token, err := loginUseCase.Execute(input)
 
 		assert.Error(t, err)
-		assert.Equal(t, matchErr, err)
+		assert.Equal(t, entities.ErrInvalidPassword, err)
 		assert.Equal(t, "", token)
 	})
 

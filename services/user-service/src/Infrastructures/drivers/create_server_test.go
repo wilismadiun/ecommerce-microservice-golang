@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestMain(m *testing.M) {
@@ -132,5 +133,113 @@ func Test_RegisterUser(t *testing.T) {
 		err := database.DB.Where("email = ?", emailSuccess).First(&savedUser).Error
 		assert.NoError(t, err)
 		assert.Equal(t, emailSuccess, savedUser.Email)
+	})
+}
+
+func Test_Login(t *testing.T) {
+	router := gin.New()
+	Router(router, database.DB)
+
+	t.Run("should response 400 when email is empty", func(t *testing.T) {
+		payload := map[string]string{
+			"email":    "",
+			"password": "validpassword123",
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		// Sesuaikan path "/login" dengan routing di aplikasi Anda jika berbeda
+		req, _ := http.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("should response 404 when email is not registered", func(t *testing.T) {
+		payload := map[string]string{
+			"email":    "unregistered@example.com",
+			"password": "validpassword123",
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("should response 401 when password is incorrect", func(t *testing.T) {
+		email := "wrongpass@example.com"
+		// Generate hash password yang valid di database untuk user ini
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("correctpassword123"), bcrypt.DefaultCost)
+
+		dummyUser := entities.User{
+			ID:       "id-login-001",
+			Email:    email,
+			Password: string(hashedPassword),
+		}
+
+		// Masukkan data dummy ke database
+		err := database.DB.Create(&dummyUser).Error
+		assert.NoError(t, err)
+
+		// Hapus data secara otomatis di akhir sub-test
+		t.Cleanup(func() {
+			database.DB.Where("email = ?", email).Delete(&entities.User{})
+		})
+
+		payload := map[string]string{
+			"email":    email,
+			"password": "wrongpassword", // Password salah yang dikirimkan
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("login success", func(t *testing.T) {
+		email := "successlogin@example.com"
+		plainPassword := "correctpassword123"
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
+
+		dummyUser := entities.User{
+			ID:       "id-login-002",
+			Email:    email,
+			Password: string(hashedPassword),
+		}
+
+		// Masukkan data dummy ke database
+		err := database.DB.Create(&dummyUser).Error
+		assert.NoError(t, err)
+
+		// Hapus data secara otomatis di akhir sub-test
+		t.Cleanup(func() {
+			database.DB.Where("email = ?", email).Delete(&entities.User{})
+		})
+
+		payload := map[string]string{
+			"email":    email,
+			"password": plainPassword, // Password benar
+		}
+		jsonValue, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(jsonValue))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 }

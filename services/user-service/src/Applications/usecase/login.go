@@ -25,7 +25,7 @@ func (h *Login) Execute(login entities.Login) (string, error) {
 
 	err = h.Hasher.CompareHashPassword(login.Password, existingUser.Password)
 	if err != nil {
-		return "", err
+		return "", entities.ErrInvalidPassword
 	}
 
 	accessToken, err := h.Token.GenerateToken(existingUser.ID)

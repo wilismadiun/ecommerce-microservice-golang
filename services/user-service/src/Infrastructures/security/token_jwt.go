@@ -13,20 +13,18 @@ var secretKey = os.Getenv("JWT_SECRET")
 type AuthenticationTokenJWT struct{}
 
 type CustomClaims struct {
-	Role string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func (h *AuthenticationTokenJWT) GenerateToken(id, role string) (string, error) {
+func (h *AuthenticationTokenJWT) GenerateToken(id string) (string, error) {
 	now := time.Now()
 
 	claims := CustomClaims{
-		Role: role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Hour)), // Jangan lupa aktifkan jika perlu
+			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
-			Subject:   id, // 'id' biasanya diletakkan di Subject (sub)
+			Subject:   id, // 'id' disimpan di Subject (sub)
 		},
 	}
 
@@ -43,15 +41,13 @@ func (h *AuthenticationTokenJWT) GenerateToken(id, role string) (string, error) 
 	return signedToken, nil
 }
 
-func (h *AuthenticationTokenJWT) ValidateToken(tokenString string) (string, string, error) {
-
+func (h *AuthenticationTokenJWT) ValidateToken(tokenString string) (string, error) {
 	claims := &CustomClaims{}
 
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		claims,
 		func(token *jwt.Token) (interface{}, error) {
-
 			if token.Method != jwt.SigningMethodHS256 {
 				return nil, errors.New("invalid signing method")
 			}
@@ -62,14 +58,14 @@ func (h *AuthenticationTokenJWT) ValidateToken(tokenString string) (string, stri
 
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return "", "", errors.New("Token sudah tidak berlaku")
+			return "", errors.New("Token sudah tidak berlaku")
 		}
-		return "", "", err
+		return "", err
 	}
 
 	if !token.Valid {
-		return "", "", jwt.ErrTokenInvalidClaims
+		return "", jwt.ErrTokenInvalidClaims
 	}
 
-	return claims.Subject, claims.Role, nil
+	return claims.Subject, nil
 }
