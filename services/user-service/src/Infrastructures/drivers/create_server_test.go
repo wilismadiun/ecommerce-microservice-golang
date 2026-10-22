@@ -379,3 +379,50 @@ func Test_AddProfile(t *testing.T) {
 		assert.Equal(t, "089876543210", savedProfile.Phone)
 	})
 }
+
+func Test_GetProfileByUser(t *testing.T) {
+	router := gin.New()
+	Router(router, database.DB)
+
+	t.Run("should response 404 when profile not found", func(t *testing.T) {
+		nonExistentUserID := "999999"
+
+		req, _ := http.NewRequest(http.MethodGet, "/users/"+nonExistentUserID+"/profile", nil)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Contains(t, w.Body.String(), "error")
+	})
+
+	t.Run("should response 200 when profile found", func(t *testing.T) {
+		testUserID := "user-test-123"
+		testProfileID := "prof-test-123"
+
+		// --- 1. SETUP: Masukkan data ke 'users' terlebih dahulu (karena ada foreign key) ---
+		database.DB.Exec(
+			"INSERT INTO users (id, email, password) VALUES (?, ?, ?)",
+			testUserID, "test@mail.com", "hashedpassword123",
+		)
+
+		// --- 2. SETUP: Masukkan data ke 'profiles' ---
+		database.DB.Exec(
+			"INSERT INTO profiles (id, user_id, name, phone, address) VALUES (?, ?, ?, ?, ?)",
+			testProfileID, testUserID, "John Doe", "08123456789", "Jakarta Selatan",
+		)
+
+		t.Cleanup(func() {
+			database.DB.Exec("DELETE FROM profiles WHERE user_id = ?", testUserID)
+			database.DB.Exec("DELETE FROM users WHERE id = ?", testUserID)
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/users/"+testUserID+"/profile", nil)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "Profile retrieved successfully")
+	})
+}

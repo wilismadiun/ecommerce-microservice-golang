@@ -9,6 +9,7 @@ import (
 func UserRouter(router *gin.Engine, h *Handler, validator middleware.TokenValidator) {
 	router.POST("/register", h.Register)
 	router.POST("/login", h.Login)
+	router.GET("/users/:id/profile", h.GetProfileByUser)
 
 	// profile
 	profile := router.Group("/profile")

@@ -10,9 +10,10 @@ import (
 )
 
 type Handler struct {
-	RegisterHandler   *usecase.Register
-	LoginHandler      *usecase.Login
-	AddProfileHandler *usecase.AddProfile
+	RegisterHandler         *usecase.Register
+	LoginHandler            *usecase.Login
+	AddProfileHandler       *usecase.AddProfile
+	GetProfileByUserHandler *usecase.GetProfileByUser
 }
 
 func (h *Handler) Register(c *gin.Context) {
@@ -120,4 +121,27 @@ func (h *Handler) AddProfile(c *gin.Context) {
 			"profile": existProfile,
 		},
 	})
+}
+
+func (h *Handler) GetProfileByUser(c *gin.Context) {
+	userId := c.Param("id")
+
+	profile, err := h.GetProfileByUserHandler.Execute(userId)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+		if errors.Is(err, entities.ErrProfileNotFound) {
+			statusCode = http.StatusNotFound
+		}
+
+		c.JSON(statusCode, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Profile retrieved successfully",
+		"data":    profile,
+	})
+
 }

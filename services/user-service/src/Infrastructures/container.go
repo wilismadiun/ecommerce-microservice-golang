@@ -34,9 +34,14 @@ func Container(db *gorm.DB) *http.Handler {
 		Generator: &generatorImplement,
 	}
 
+	getprofileByUserHandler := usecase.GetProfileByUser{
+		Repo: &profileRepoImplement,
+	}
+
 	return &http.Handler{
-		RegisterHandler:   &registerHandler,
-		LoginHandler:      &loginHandler,
-		AddProfileHandler: &addProfileHandler,
+		RegisterHandler:         &registerHandler,
+		LoginHandler:            &loginHandler,
+		AddProfileHandler:       &addProfileHandler,
+		GetProfileByUserHandler: &getprofileByUserHandler,
 	}
 }
