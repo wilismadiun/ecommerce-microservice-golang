@@ -22,6 +22,6 @@ func Test_AuthToken(t *testing.T) {
 	log.Println("ini adalah claim")
 	log.Println(idClaim)
 
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, id, idClaim)
 }
