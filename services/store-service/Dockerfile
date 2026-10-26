@@ -15,8 +15,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/ecommerce-store-service .
-COPY --from=builder /app/migrations ./migrations
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["./ecommerce-store-service"]
