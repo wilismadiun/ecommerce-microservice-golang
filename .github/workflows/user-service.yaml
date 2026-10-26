@@ -72,9 +72,16 @@ jobs:
       - name: Docker login
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
       
-      - name: Build image
+      - name: Build image service
         working-directory: services/user-service
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-user-service:v1.0 .
 
-      - name: Push repository docker
+      - name: Push image service
         run: docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-user-service:v1.0 
+
+      - name: Build image migrations
+        working-directory: services/user-service
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-user-service-migrations:v1.0 -f Dockerfile.migrate .
+
+      - name: Push image migrations
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-user-service-migrations:v1.0 
