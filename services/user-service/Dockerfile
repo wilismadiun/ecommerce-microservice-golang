@@ -15,7 +15,6 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/ecommerce-user-service .
-COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 3000
 
