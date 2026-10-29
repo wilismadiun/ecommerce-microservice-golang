@@ -10,11 +10,11 @@ import (
 func TestUserCLientHttp_IsUserExists(t *testing.T) {
 	// Mock Server untuk mensimulasikan User Service
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/user-123/profile" {
+		if r.URL.Path == "/users/user-123/profile" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		if r.URL.Path == "/user-404/profile" {
+		if r.URL.Path == "/users/user-404/profile" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

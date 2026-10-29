@@ -189,7 +189,6 @@ func Test_AddStore(t *testing.T) {
 		assert.Contains(t, err.Error(), "database connection error")
 	})
 
-	// error
 	t.Run("should return error when repository failed to add owner", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -245,7 +244,6 @@ func Test_AddStore(t *testing.T) {
 		assert.Equal(t, "failed to add owner", err.Error())
 	})
 
-	// error
 	t.Run("Success", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()

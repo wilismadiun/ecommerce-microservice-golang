@@ -10,9 +10,10 @@ type UserCLientHttp struct{}
 
 func (h *UserCLientHttp) IsUserExists(userId string) (bool, error) {
 	userServiceURL := os.Getenv("USERSERVICEURL")
-	path := "profile"
+	firstPath := "users"
+	lastPath := "profile"
 
-	targetURL := fmt.Sprintf("%s/%s/%s", userServiceURL, userId, path)
+	targetURL := fmt.Sprintf("%s/%s/%s/%s", userServiceURL, firstPath, userId, lastPath)
 
 	resp, err := http.Get(targetURL)
 	if err != nil {

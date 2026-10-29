@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"store-service/src/Applications/usecase"
 	"store-service/src/Domains/entities"
@@ -11,12 +10,11 @@ import (
 )
 
 type Handler struct {
-	AddStoreHandler *usecase.AddStore
+	AddStoreHandler    *usecase.AddStore
+	GetUserRoleHanderl *usecase.GetUserRole
 }
 
 func (h *Handler) AddStore(c *gin.Context) {
-	log.Println("=================================Ini controller===========================================")
-
 	userId, exist := c.Get("user_id")
 	if !exist {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -71,5 +69,46 @@ func (h *Handler) AddStore(c *gin.Context) {
 			"user_id": userCtx,
 			"role":    "OWNER",
 		},
+	})
+}
+
+func (h *Handler) GetUserRole(c *gin.Context) {
+	userId, exist := c.Get("user_id")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized: user context not found",
+		})
+		return
+	}
+
+	userCtx, ok := userId.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to parse user context",
+		})
+		return
+	}
+
+	storeId := c.Param("id")
+
+	role, err := h.GetUserRoleHanderl.Execute(userCtx, storeId)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+		if errors.Is(err, entities.ErrUserRoleNotFound) {
+			statusCode = http.StatusNotFound
+		}
+
+		if errors.Is(err, entities.ErrDatabase) {
+			statusCode = http.StatusInternalServerError
+		}
+
+		c.JSON(statusCode, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": role,
 	})
 }

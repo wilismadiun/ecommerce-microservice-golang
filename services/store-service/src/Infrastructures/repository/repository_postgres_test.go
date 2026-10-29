@@ -245,3 +245,58 @@ func Test_AddUserStore(t *testing.T) {
 	assert.Equal(t, newUserStore.UserId, foundUserStore.UserId)
 	assert.Equal(t, newUserStore.RoleId, foundUserStore.RoleId)
 }
+
+func TestUserStoreRepository_GetUserRole(t *testing.T) {
+	t.Run("data not found", func(t *testing.T) {
+		userId := "non-existent-user-id"
+		storeId := "non-existent-store-id"
+
+		role, err := userStoreRepo.GetUserRole(userId, storeId)
+
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, entities.ErrUserRoleNotFound))
+		assert.Empty(t, role)
+	})
+
+	t.Run("data found", func(t *testing.T) {
+		// Data dummy untuk pengujian
+		userStorePKId := "userstore-test-999"
+		storeID := "store-test-999"
+		userID := "user-test-999"
+		roleID := "1" // ID role OWNER yang sudah ada di database/disesuaikan
+		expectedRoleName := "OWNER"
+
+		// Cleanup data setelah test selesai dijalankan
+		t.Cleanup(func() {
+			database.DB.Where("id = ?", userStorePKId).Delete(&entities.UserStore{})
+			database.DB.Where("id = ?", storeID).Delete(&entities.Store{})
+		})
+
+		store := entities.Store{
+			Id:          storeID,
+			Name:        "Toko Test",
+			Description: "Deskripsi Toko Test",
+			Phone:       "08123456789",
+			Email:       "toko@test.com",
+			Address:     "Jl. Test No. 1",
+		}
+		err := database.DB.Create(&store).Error
+		assert.NoError(t, err)
+
+		userStore := entities.UserStore{
+			Id:      userStorePKId,
+			StoreId: storeID,
+			UserId:  userID,
+			RoleId:  roleID,
+		}
+		err = database.DB.Create(&userStore).Error
+		assert.NoError(t, err)
+
+		// 2. Eksekusi fungsi yang diuji
+		roleName, err := userStoreRepo.GetUserRole(userID, storeID)
+
+		// 3. Assertions
+		assert.NoError(t, err)
+		assert.Equal(t, expectedRoleName, roleName)
+	})
+}

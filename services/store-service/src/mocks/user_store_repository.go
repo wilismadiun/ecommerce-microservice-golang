@@ -68,3 +68,18 @@ func (mr *MockUserStoreRepositoryMockRecorder) FindUserStoreByUser(userId any) *
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserStoreByUser", reflect.TypeOf((*MockUserStoreRepository)(nil).FindUserStoreByUser), userId)
 }
+
+// GetUserRole mocks base method.
+func (m *MockUserStoreRepository) GetUserRole(userId, storeId string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserRole", userId, storeId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserRole indicates an expected call of GetUserRole.
+func (mr *MockUserStoreRepositoryMockRecorder) GetUserRole(userId, storeId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserRole", reflect.TypeOf((*MockUserStoreRepository)(nil).GetUserRole), userId, storeId)
+}

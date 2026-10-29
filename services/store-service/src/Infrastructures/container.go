@@ -23,7 +23,12 @@ func Container(db *gorm.DB) *http.Handler {
 		UserCLient:          &UserCLientRequestImplement,
 	}
 
+	getUserStoreHandler := usecase.GetUserRole{
+		UserStoreRepository: &userStoreRepoImplement,
+	}
+
 	return &http.Handler{
-		AddStoreHandler: &addStoreHandler,
+		AddStoreHandler:    &addStoreHandler,
+		GetUserRoleHanderl: &getUserStoreHandler,
 	}
 }

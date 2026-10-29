@@ -12,5 +12,6 @@ func StoreRouter(router *gin.Engine, h *Handler, validator middleware.TokenValid
 	store.Use(middleware.AuthMiddleware(validator))
 	{
 		store.POST("", h.AddStore)
+		store.GET("/:id/user_role", h.GetUserRole)
 	}
 }
