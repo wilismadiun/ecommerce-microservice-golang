@@ -70,3 +70,56 @@ func Test_CreateProduct(t *testing.T) {
 	assert.Equal(t, product.Name, savedProduct.Name)
 	assert.Equal(t, product.Price, savedProduct.Price)
 }
+
+func Test_DecreaseStock(t *testing.T) {
+	t.Run("if stock < quantity", func(t *testing.T) {
+		productID := "test-prod-insufficient-01"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Test Mouse",
+			Description: "Wireless Mouse",
+			Price:       150000.0,
+			Stock:       3, // Stok sedikit
+		}
+
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		err = productRepository.DecreaseStock(productID, 5)
+
+		assert.Error(t, err)
+		assert.Equal(t, entities.ErrInsufficientStock, err)
+	})
+
+	t.Run("berhasil", func(t *testing.T) {
+		productID := "test-prod-success-01"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Test Monitor",
+			Description: "LED Monitor",
+			Price:       2000000.0,
+			Stock:       10, // Stok cukup
+		}
+
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		err = productRepository.DecreaseStock(productID, 4)
+
+		assert.NoError(t, err)
+
+		var updatedProduct entities.Product
+		database.DB.First(&updatedProduct, "id = ?", productID)
+		assert.Equal(t, 6, updatedProduct.Stock)
+	})
+}

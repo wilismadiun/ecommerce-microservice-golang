@@ -18,3 +18,18 @@ func (h *ProductRepositoryPostgres) CreateProduct(product *entities.Product) err
 
 	return nil
 }
+
+func (h *ProductRepositoryPostgres) DecreaseStock(productID string, quantity int) error {
+	result := h.DB.Table("products").Where("id = ? AND stock >= ?", productID, quantity).Update("stock", gorm.Expr("stock - ?", quantity))
+
+	err := result.Error
+	if err != nil {
+		return entities.ErrDatabase
+	}
+
+	if result.RowsAffected == 0 {
+		return entities.ErrInsufficientStock
+	}
+
+	return nil
+}

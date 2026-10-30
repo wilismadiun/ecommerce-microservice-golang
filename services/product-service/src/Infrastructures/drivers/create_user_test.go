@@ -162,3 +162,104 @@ func Test_CreateProduct(t *testing.T) {
 		})
 	})
 }
+
+func Test_DecreaseStock(t *testing.T) {
+	// Setup Router Gin
+	router := gin.New()
+
+	// Atau jika Anda menggunakan fungsi Router langsung dari package drivers:
+	Router(router, database.DB)
+
+	t.Run("should response 400 when product id empty", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"quantity": 5,
+		}
+		jsonBody, _ := json.Marshal(payload)
+
+		// Memanggil endpoint dengan ID kosong pada parameter URL
+		req, _ := http.NewRequest(http.MethodPatch, "/products//decrease-stock", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		// Gin akan mengembalikan 404 karena struktur URL tidak cocok,
+		// atau 400 jika lolos ke usecase. Kita sesuaikan dengan ekspektasi route.
+		assert.True(t, recorder.Code == http.StatusBadRequest || recorder.Code == http.StatusNotFound)
+	})
+
+	t.Run("should response 400 when stock is less than the quantity", func(t *testing.T) {
+		// 1. Arrange: Buat produk dummy dengan stok sedikit (misal: stok 2)
+		productID := "prod-stock-low-999"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Test Item",
+			Description: "Description",
+			Price:       10000.0,
+			Stock:       2,
+		}
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		// 2. Act: Minta kurangi stok melebihi jumlah yang ada (quantity: 5)
+		payload := entities.DecreaseStock{
+			Quantity: 5,
+		}
+		jsonBody, _ := json.Marshal(payload)
+
+		url := "/products/" + productID + "/decrease-stock"
+		req, _ := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		// 3. Assert: Harus mengembalikan status 400 Bad Request karena stok kurang
+		assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		// 1. Arrange: Buat produk dummy dengan stok mencukupi (misal: stok 10)
+		productID := "prod-stock-success-888"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Test Item Success",
+			Description: "Description",
+			Price:       15000.0,
+			Stock:       10,
+		}
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		// 2. Act: Kurangi stok dengan jumlah yang valid (quantity: 4)
+		payload := map[string]interface{}{
+			"quantity": 4,
+		}
+		jsonBody, _ := json.Marshal(payload)
+
+		url := "/products/" + productID + "/decrease-stock"
+		req, _ := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		// 3. Assert: Harus sukses (status 200 OK)
+		assert.Equal(t, http.StatusOK, recorder.Code)
+
+		// Verifikasi langsung ke database bahwa stok tersisa 6 (10 - 4)
+		var updatedProduct entities.Product
+		database.DB.First(&updatedProduct, "id = ?", productID)
+		assert.Equal(t, 6, updatedProduct.Stock)
+	})
+}

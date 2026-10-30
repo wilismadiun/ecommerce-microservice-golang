@@ -11,6 +11,7 @@ import (
 
 type Handler struct {
 	CreateProductHanderl *usecase.CreateProduct
+	DecreaseStockhandler *usecase.DecreaseStock
 }
 
 func (h *Handler) CreateProduct(c *gin.Context) {
@@ -65,4 +66,40 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 		"message": "Product creation was successful",
 		"data":    product,
 	})
+}
+
+func (h *Handler) DecreaseStock(c *gin.Context) {
+	productID := c.Param("id")
+
+	var decreaseStock entities.DecreaseStock
+
+	err := c.ShouldBindBodyWithJSON(&decreaseStock)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	decreaseStock.ProductID = productID
+
+	err = h.DecreaseStockhandler.Execute(decreaseStock)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+
+		if err == entities.ErrDatabase {
+			statusCode = http.StatusInternalServerError
+		}
+
+		c.JSON(statusCode, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "succes",
+		"data":    decreaseStock,
+	})
+
 }

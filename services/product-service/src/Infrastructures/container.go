@@ -21,7 +21,12 @@ func Container(db *gorm.DB) *http.Handler {
 		StoreClient:       &storeClientImplement,
 	}
 
+	decreaseStockhandler := usecase.DecreaseStock{
+		ProductRepository: &productRepositoryImplement,
+	}
+
 	return &http.Handler{
 		CreateProductHanderl: &createProductHandler,
+		DecreaseStockhandler: &decreaseStockhandler,
 	}
 }

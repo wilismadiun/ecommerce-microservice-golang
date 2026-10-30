@@ -53,3 +53,17 @@ func (mr *MockProductRepositoryMockRecorder) CreateProduct(product any) *gomock.
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProduct", reflect.TypeOf((*MockProductRepository)(nil).CreateProduct), product)
 }
+
+// DecreaseStock mocks base method.
+func (m *MockProductRepository) DecreaseStock(productID string, quantity int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DecreaseStock", productID, quantity)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DecreaseStock indicates an expected call of DecreaseStock.
+func (mr *MockProductRepositoryMockRecorder) DecreaseStock(productID, quantity any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecreaseStock", reflect.TypeOf((*MockProductRepository)(nil).DecreaseStock), productID, quantity)
+}
