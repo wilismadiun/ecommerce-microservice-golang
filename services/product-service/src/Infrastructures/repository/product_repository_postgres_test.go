@@ -123,3 +123,76 @@ func Test_DecreaseStock(t *testing.T) {
 		assert.Equal(t, 6, updatedProduct.Stock)
 	})
 }
+
+func TestProductRepositoryPostgres_GetProductById(t *testing.T) {
+	t.Run("should return error when product not found", func(t *testing.T) {
+		nonExistentID := "non-existent-id-999"
+		product, err := productRepository.GetProductById(nonExistentID)
+
+		assert.Error(t, err)
+		assert.Equal(t, entities.ErrProductNotFound, err)
+		assert.Equal(t, entities.Product{}, product)
+	})
+
+	t.Run("should return product successfully when product exists", func(t *testing.T) {
+		productID := "test-product-id-123"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Mechanical Keyboard",
+			Description: "Wireless RGB Mechanical Keyboard",
+			Price:       1250000.0,
+			Stock:       25,
+		}
+
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		product, err := productRepository.GetProductById(productID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, productID, product.ID)
+		assert.Equal(t, dummyProduct.Name, product.Name)
+		assert.Equal(t, dummyProduct.StoreID, product.StoreID)
+		assert.Equal(t, dummyProduct.Stock, product.Stock)
+	})
+}
+
+func TestProductRepositoryPostgres_UpdateStock(t *testing.T) {
+	t.Run("should update product stock successfully", func(t *testing.T) {
+		// 1. Arrange: Buat data dummy produk dengan stok awal (misal: 10)
+		productID := "test-update-stock-01"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Test Product Update Stock",
+			Description: "Description",
+			Price:       100000.0,
+			Stock:       10, // Stok awal
+		}
+
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		// Bersihkan database setelah test selesai menggunakan t.Cleanup
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		// 2. Act: Panggil fungsi UpdateStock dengan nilai stok baru (misal: 50)
+		newStock := 50
+		err = productRepository.UpdateStock(productID, newStock)
+
+		// 3. Assert: Pastikan tidak ada error
+		assert.NoError(t, err)
+
+		// Verifikasi langsung ke database bahwa stok benar-benar berubah menjadi 50
+		var updatedProduct entities.Product
+		database.DB.First(&updatedProduct, "id = ?", productID)
+		assert.Equal(t, newStock, updatedProduct.Stock)
+	})
+}

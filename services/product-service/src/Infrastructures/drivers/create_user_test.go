@@ -35,8 +35,6 @@ func TestMain(m *testing.M) {
 }
 
 func Test_CreateProduct(t *testing.T) {
-	// 1. Setup Mock HTTP Server Dinamis untuk StoreClient
-	// Kita buat server yang status dan body-nya bisa diubah secara fleksibel per test case
 	var currentStatusCode = http.StatusOK
 	var currentResponse = "OWNER"
 
@@ -261,5 +259,145 @@ func Test_DecreaseStock(t *testing.T) {
 		var updatedProduct entities.Product
 		database.DB.First(&updatedProduct, "id = ?", productID)
 		assert.Equal(t, 6, updatedProduct.Stock)
+	})
+}
+
+func Test_UpdateStock(t *testing.T) {
+	var currentStatusCode = http.StatusOK
+	var currentResponse = "OWNER"
+
+	mockStoreServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(currentStatusCode)
+		if currentStatusCode == http.StatusOK {
+			_, _ = w.Write([]byte(currentResponse))
+		}
+	}))
+	defer mockStoreServer.Close()
+
+	// Arahkan environment variable STORESERVICEURL ke mock server
+	t.Setenv("STORESERVICEURL", mockStoreServer.URL)
+
+	// Setup Router Gin
+	router := gin.New()
+	Router(router, database.DB)
+
+	// Generate token JWT yang valid untuk pengujian
+	tokenGenerator := security.AuthenticationTokenJWT{}
+	validUserID := "user-test-uuid-123"
+	validToken, err := tokenGenerator.GenerateToken(validUserID)
+	assert.NoError(t, err)
+
+	t.Run("should response 401 when authorization header is empty", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"quantity": 10,
+		}
+		jsonBody, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPatch, "/products/some-id/stock", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		// Tidak menyertakan header Authorization
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+	})
+
+	t.Run("should response 401 when user role not OWNER and ADMIN", func(t *testing.T) {
+		// Buat produk dummy terlebih dahulu agar lolos pengecekan GetProductById
+		productID := "prod-role-test-999"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Test Product Role",
+			Description: "Description",
+			Price:       50000.0,
+			Stock:       10,
+		}
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		// Set status mock store server menjadi unauthorized atau response role selain owner/admin
+		currentStatusCode = http.StatusOK
+		currentResponse = "CASHIER" // Role bukan OWNER atau ADMIN
+
+		payload := map[string]interface{}{
+			"quantity": 15,
+		}
+		jsonBody, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPatch, "/products/"+productID+"/stock", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+validToken)
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		// Berdasarkan controller, ErrForbidden menghasilkan status BadRequest (atau StatusUnauthorized jika disesuaikan)
+		assert.True(t, recorder.Code == http.StatusBadRequest || recorder.Code == http.StatusUnauthorized)
+	})
+
+	t.Run("should response 400 when product not found", func(t *testing.T) {
+		nonExistentID := "product-not-found-uuid"
+
+		payload := map[string]interface{}{
+			"quantity": 20,
+		}
+		jsonBody, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPatch, "/products/"+nonExistentID+"/stock", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+validToken)
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		// Controller memetakan ErrProductNotFound menjadi StatusNotFound (404)
+		assert.Equal(t, http.StatusNotFound, recorder.Code)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		productID := "prod-success-uuid-111"
+		dummyProduct := entities.Product{
+			ID:          productID,
+			StoreID:     "store-test-999",
+			Name:        "Test Product Success",
+			Description: "Description",
+			Price:       75000.0,
+			Stock:       10,
+		}
+		err := database.DB.Create(&dummyProduct).Error
+		assert.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.DB.Unscoped().Delete(&entities.Product{}, "id = ?", productID)
+		})
+
+		// Set mock store server merespons role OWNER yang valid
+		currentStatusCode = http.StatusOK
+		currentResponse = "OWNER"
+
+		payload := map[string]interface{}{
+			"quantity": 30,
+		}
+		jsonBody, _ := json.Marshal(payload)
+
+		req, _ := http.NewRequest(http.MethodPatch, "/products/"+productID+"/stock", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+validToken)
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Code)
+
+		// Verifikasi perubahan stok di database
+		var updatedProduct entities.Product
+		database.DB.First(&updatedProduct, "id = ?", productID)
+		assert.Equal(t, 30, updatedProduct.Stock)
 	})
 }

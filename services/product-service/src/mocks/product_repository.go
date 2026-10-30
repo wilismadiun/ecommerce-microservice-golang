@@ -67,3 +67,32 @@ func (mr *MockProductRepositoryMockRecorder) DecreaseStock(productID, quantity a
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecreaseStock", reflect.TypeOf((*MockProductRepository)(nil).DecreaseStock), productID, quantity)
 }
+
+// GetProductById mocks base method.
+func (m *MockProductRepository) GetProductById(id string) (entities.Product, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProductById", id)
+	ret0, _ := ret[0].(entities.Product)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProductById indicates an expected call of GetProductById.
+func (mr *MockProductRepositoryMockRecorder) GetProductById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductById", reflect.TypeOf((*MockProductRepository)(nil).GetProductById), id)
+}
+
+// UpdateStock mocks base method.
+func (m *MockProductRepository) UpdateStock(productId string, quantity int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStock", productId, quantity)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateStock indicates an expected call of UpdateStock.
+func (mr *MockProductRepositoryMockRecorder) UpdateStock(productId, quantity any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStock", reflect.TypeOf((*MockProductRepository)(nil).UpdateStock), productId, quantity)
+}

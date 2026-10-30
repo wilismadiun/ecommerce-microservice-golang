@@ -12,10 +12,11 @@ import (
 type Handler struct {
 	CreateProductHanderl *usecase.CreateProduct
 	DecreaseStockhandler *usecase.DecreaseStock
+	UpdateStockHandler   *usecase.UpdateProduct
 }
 
 func (h *Handler) CreateProduct(c *gin.Context) {
-	userId, exist := c.Get("user_id")
+	token, exist := c.Get("token")
 	if !exist {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized: user context not found",
@@ -23,7 +24,7 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	userCtx, ok := userId.(string)
+	tokenCtx, ok := token.(string)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to parse user context",
@@ -40,7 +41,7 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	product, err = h.CreateProductHanderl.Execute(userCtx, product)
+	product, err = h.CreateProductHanderl.Execute(tokenCtx, product)
 	if err != nil {
 		statusCode := http.StatusBadRequest
 
@@ -102,4 +103,58 @@ func (h *Handler) DecreaseStock(c *gin.Context) {
 		"data":    decreaseStock,
 	})
 
+}
+
+func (h *Handler) UpdateProduct(c *gin.Context) {
+	token, exist := c.Get("token")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized: user context not found",
+		})
+		return
+	}
+
+	tokenCtx, ok := token.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to parse user context",
+		})
+		return
+	}
+
+	productID := c.Param("id")
+
+	var updateStock entities.UpdateStock
+	err := c.ShouldBindBodyWithJSON(&updateStock)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	updateStock.ProductID = productID
+
+	err = h.UpdateStockHandler.Execute(tokenCtx, updateStock)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+
+		if errors.Is(err, entities.ErrDatabase) {
+			statusCode = http.StatusInternalServerError
+		}
+
+		if errors.Is(err, entities.ErrProductNotFound) || errors.Is(err, entities.ErrUserRoleNotFound) {
+			statusCode = http.StatusNotFound
+		}
+
+		c.JSON(statusCode, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "succes",
+		"data":    updateStock,
+	})
 }

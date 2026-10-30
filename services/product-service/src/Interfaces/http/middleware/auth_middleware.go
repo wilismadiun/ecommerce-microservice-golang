@@ -40,7 +40,7 @@ func AuthMiddleware(tokenValidator TokenValidator) gin.HandlerFunc {
 
 		token := parts[1]
 
-		userID, err := tokenValidator.ValidateToken(token)
+		_, err := tokenValidator.ValidateToken(token)
 		if err != nil {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -51,7 +51,8 @@ func AuthMiddleware(tokenValidator TokenValidator) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", userID)
+		// c.Set("user_id", userID)
+		c.Set("token", token)
 
 		c.Next()
 	}

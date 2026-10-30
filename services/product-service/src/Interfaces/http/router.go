@@ -13,5 +13,6 @@ func ProductRouter(router *gin.Engine, h *Handler, validator middleware.TokenVal
 	store.Use(middleware.AuthMiddleware(validator))
 	{
 		store.POST("", h.CreateProduct)
+		store.PATCH("/:id/stock", h.UpdateProduct)
 	}
 }
