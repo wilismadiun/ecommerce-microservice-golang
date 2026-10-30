@@ -3,6 +3,7 @@ package main
 import (
 	"product-service/config"
 	"product-service/src/Infrastructures/database"
+	"product-service/src/Infrastructures/drivers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +14,7 @@ func main() {
 	dsn := config.DSN()
 	database.ConnectDB(dsn)
 
-	// drivers.Router(router, database.DB)
+	drivers.Router(router, database.DB)
 
 	router.Run(":3002")
 }
