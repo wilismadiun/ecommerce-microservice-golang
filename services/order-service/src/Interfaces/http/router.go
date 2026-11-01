@@ -7,9 +7,9 @@ import (
 )
 
 func OrderRouter(router *gin.Engine, h *Handler, validator middleware.TokenValidator) {
-	order := router.Group("orders")
+	order := router.Group("/orders")
 	order.Use(middleware.AuthMiddleware(validator))
 	{
-		order.POST("", h.CreateOrder)
+		order.POST("/:id", h.CreateOrder)
 	}
 }
