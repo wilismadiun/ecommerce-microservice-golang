@@ -29,7 +29,7 @@ func Test_Login(t *testing.T) {
 			Password: "validpassword123",
 		}
 
-		token, err := loginUseCase.Execute(input)
+		token, _, err := loginUseCase.Execute(input)
 
 		assert.Error(t, err)
 		assert.Equal(t, "", token)
@@ -60,7 +60,7 @@ func Test_Login(t *testing.T) {
 			Hasher:   mockHasher,
 		}
 
-		token, err := loginUseCase.Execute(input)
+		token, _, err := loginUseCase.Execute(input)
 
 		assert.Error(t, err)
 		assert.Equal(t, entities.ErrUserNotFound, err)
@@ -86,7 +86,7 @@ func Test_Login(t *testing.T) {
 			Password: "",
 		}
 
-		token, err := loginUseCase.Execute(input)
+		token, _, err := loginUseCase.Execute(input)
 
 		assert.Error(t, err)
 		assert.Equal(t, "", token)
@@ -129,7 +129,7 @@ func Test_Login(t *testing.T) {
 			Hasher:   mockHasher,
 		}
 
-		token, err := loginUseCase.Execute(input)
+		token, _, err := loginUseCase.Execute(input)
 
 		assert.Error(t, err)
 		assert.Equal(t, entities.ErrInvalidPassword, err)
@@ -180,9 +180,10 @@ func Test_Login(t *testing.T) {
 			Hasher:   mockHasher,
 		}
 
-		token, err := loginUseCase.Execute(input)
+		token, userID, err := loginUseCase.Execute(input)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedToken, token)
+		assert.Equal(t, existingUser.ID, userID)
 	})
 }

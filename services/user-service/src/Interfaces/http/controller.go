@@ -52,7 +52,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.LoginHandler.Execute(login)
+	token, userID, err := h.LoginHandler.Execute(login)
 	if err != nil {
 		statusCode := http.StatusBadRequest
 
@@ -70,7 +70,10 @@ func (h *Handler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login berhasil",
-		"data":    token,
+		"data": gin.H{
+			"id":    userID,
+			"token": token,
+		},
 	})
 }
 

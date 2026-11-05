@@ -12,26 +12,26 @@ type Login struct {
 	Hasher   security.Hasher
 }
 
-func (h *Login) Execute(login entities.Login) (string, error) {
+func (h *Login) Execute(login entities.Login) (string, string, error) {
 	err := entities.VerifyLogin(login)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	existingUser, err := h.UserRepo.FindUserByEmail(login.Email)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	err = h.Hasher.CompareHashPassword(login.Password, existingUser.Password)
 	if err != nil {
-		return "", entities.ErrInvalidPassword
+		return "", "", entities.ErrInvalidPassword
 	}
 
 	accessToken, err := h.Token.GenerateToken(existingUser.ID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return accessToken, nil
+	return accessToken, existingUser.ID, nil
 }
